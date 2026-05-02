@@ -1,0 +1,32 @@
+---
+# ansible/inventory.yml
+# Define your client machines here
+
+all:
+  children:
+
+    # ── Windows desktops (via WinRM or SSH) ────────────────────
+    workstations:
+      hosts:
+        ws-001:
+          ansible_host: 192.168.1.101
+        ws-002:
+          ansible_host: 192.168.1.102
+      vars:
+        mcp_log_level: info
+
+    # ── Linux servers ──────────────────────────────────────────
+    servers:
+      hosts:
+        srv-001:
+          ansible_host: 192.168.1.201
+        srv-002:
+          ansible_host: 192.168.1.202
+      vars:
+        mcp_log_level: debug
+        mcp_allowed_domains: "github.com,gitlab.company.com,api.example.com"
+
+  vars:
+    ansible_user: your_admin_user
+    ansible_ssh_private_key_file: ~/.ssh/id_rsa
+    ansible_become: true

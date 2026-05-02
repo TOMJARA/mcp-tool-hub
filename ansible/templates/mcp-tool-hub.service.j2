@@ -1,0 +1,36 @@
+[Unit]
+Description=MCP Tool Hub — AI Tool Server
+Documentation=https://github.com/your-org/mcp-tool-hub
+After=network.target
+Wants=network.target
+
+[Service]
+Type=simple
+User={{ mcp_service_user }}
+Group={{ mcp_service_user }}
+WorkingDirectory={{ mcp_install_dir }}/src
+
+# Load environment from .env file
+EnvironmentFile={{ mcp_install_dir }}/.env
+
+ExecStart=/usr/bin/node host/dist/cli.js
+
+# Restart policy
+Restart=on-failure
+RestartSec=5s
+StartLimitIntervalSec=60
+StartLimitBurst=5
+
+# Security hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ReadWritePaths={{ mcp_data_dir }}
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=mcp-tool-hub
+
+[Install]
+WantedBy=multi-user.target

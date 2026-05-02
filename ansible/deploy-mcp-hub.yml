@@ -1,0 +1,189 @@
+---
+# ================================================================
+# Ansible Playbook: Deploy MCP Tool Hub
+# ================================================================
+# This playbook deploys the MCP Tool Hub to all client machines,
+# installs Node.js if needed, configures the environment,
+# and starts the hub as a systemd service.
+#
+# Usage:
+#   ansible-playbook -i inventory.yml deploy-mcp-hub.yml
+#   ansible-playbook -i inventory.yml deploy-mcp-hub.yml --tags update
+#
+# Variables (override in group_vars or with -e):
+#   mcp_install_dir:   /opt/mcp-tool-hub
+#   mcp_fs_root:       /opt/mcp-tool-hub/data/files
+#   mcp_git_workspace: /opt/mcp-tool-hub/data/repos
+#   mcp_memory_path:   /opt/mcp-tool-hub/data/memory.json
+#   mcp_log_level:     info
+#   node_version:      "20"
+# ================================================================
+
+- name: Deploy MCP Tool Hub
+  hosts: all
+  become: true
+
+  vars:
+    mcp_install_dir:    /opt/mcp-tool-hub
+    mcp_data_dir:       /opt/mcp-tool-hub/data
+    mcp_fs_root:        /opt/mcp-tool-hub/data/files
+    mcp_git_workspace:  /opt/mcp-tool-hub/data/repos
+    mcp_memory_path:    /opt/mcp-tool-hub/data/memory.json
+    mcp_log_level:      info
+    mcp_allowed_domains: ""
+    node_version:       "20"
+    mcp_service_user:   mcp-hub
+    mcp_service_name:   mcp-tool-hub
+
+  tasks:
+
+    # ── 1. System prerequisites ────────────────────────────────
+
+    - name: Install system packages
+      ansible.builtin.package:
+        name:
+          - git
+          - curl
+        state: present
+
+    - name: Check if Node.js is installed
+      ansible.builtin.command: node --version
+      register: node_check
+      ignore_errors: true
+      changed_when: false
+
+    - name: Install Node.js via NodeSource
+      when: node_check.failed
+      block:
+        - name: Download NodeSource setup script
+          ansible.builtin.get_url:
+            url: "https://deb.nodesource.com/setup_{{ node_version }}.x"
+            dest: /tmp/nodesource_setup.sh
+            mode: "0755"
+
+        - name: Run NodeSource setup script
+          ansible.builtin.command: bash /tmp/nodesource_setup.sh
+          changed_when: true
+
+        - name: Install nodejs package
+          ansible.builtin.package:
+            name: nodejs
+            state: present
+
+    - name: Verify Node.js version
+      ansible.builtin.command: node --version
+      register: node_version_out
+      changed_when: false
+
+    - name: Show Node.js version
+      ansible.builtin.debug:
+        msg: "Node.js: {{ node_version_out.stdout }}"
+
+    # ── 2. Service user ────────────────────────────────────────
+
+    - name: Create mcp-hub service user
+      ansible.builtin.user:
+        name: "{{ mcp_service_user }}"
+        system: true
+        shell: /bin/false
+        home: "{{ mcp_install_dir }}"
+        create_home: false
+
+    # ── 3. Install / update the hub ───────────────────────────
+
+    - name: Create installation directory
+      ansible.builtin.file:
+        path: "{{ mcp_install_dir }}"
+        state: directory
+        owner: "{{ mcp_service_user }}"
+        group: "{{ mcp_service_user }}"
+        mode: "0755"
+
+    - name: Create data directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        owner: "{{ mcp_service_user }}"
+        group: "{{ mcp_service_user }}"
+        mode: "0750"
+      loop:
+        - "{{ mcp_data_dir }}"
+        - "{{ mcp_fs_root }}"
+        - "{{ mcp_git_workspace }}"
+
+    - name: Copy MCP Tool Hub source
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/../"   # path to your mcp-tool-hub project
+        dest: "{{ mcp_install_dir }}/src/"
+        owner: "{{ mcp_service_user }}"
+        group: "{{ mcp_service_user }}"
+        mode: "0644"
+        directory_mode: "0755"
+      tags: [update]
+
+    - name: Install npm dependencies
+      ansible.builtin.command:
+        cmd: npm install --workspaces
+        chdir: "{{ mcp_install_dir }}/src"
+      become_user: "{{ mcp_service_user }}"
+      changed_when: true
+      tags: [update]
+
+    - name: Build TypeScript
+      ansible.builtin.command:
+        cmd: npm run build --workspaces --if-present
+        chdir: "{{ mcp_install_dir }}/src"
+      become_user: "{{ mcp_service_user }}"
+      changed_when: true
+      tags: [update]
+
+    # ── 4. Environment configuration ──────────────────────────
+
+    - name: Write .env configuration
+      ansible.builtin.template:
+        src: templates/mcp-hub.env.j2
+        dest: "{{ mcp_install_dir }}/.env"
+        owner: "{{ mcp_service_user }}"
+        group: "{{ mcp_service_user }}"
+        mode: "0640"
+      notify: Restart mcp-tool-hub
+
+    # ── 5. Systemd service ────────────────────────────────────
+
+    - name: Install systemd service unit
+      ansible.builtin.template:
+        src: templates/mcp-tool-hub.service.j2
+        dest: "/etc/systemd/system/{{ mcp_service_name }}.service"
+        mode: "0644"
+      notify:
+        - Reload systemd
+        - Restart mcp-tool-hub
+
+    - name: Enable and start mcp-tool-hub service
+      ansible.builtin.systemd:
+        name: "{{ mcp_service_name }}"
+        enabled: true
+        state: started
+
+    # ── 6. Verify deployment ──────────────────────────────────
+
+    - name: Check service status
+      ansible.builtin.command: "systemctl is-active {{ mcp_service_name }}"
+      register: svc_status
+      changed_when: false
+
+    - name: Report deployment result
+      ansible.builtin.debug:
+        msg: "MCP Tool Hub deployed and running on {{ inventory_hostname }} ({{ svc_status.stdout }})"
+
+  # ── Handlers ──────────────────────────────────────────────────
+
+  handlers:
+    - name: Reload systemd
+      ansible.builtin.systemd:
+        daemon_reload: true
+
+    - name: Restart mcp-tool-hub
+      ansible.builtin.systemd:
+        name: "{{ mcp_service_name }}"
+        state: restarted

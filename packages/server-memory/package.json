@@ -1,0 +1,18 @@
+{
+  "name": "@mcp-tool-hub/server-memory",
+  "version": "1.0.0",
+  "description": "MCP server providing persistent AI knowledge base across conversations",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@mcp-tool-hub/core": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "@types/node": "^20.12.7"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "name": "@mcp-tool-hub/host",
+  "version": "1.0.0",
+  "description": "MCP Tool Hub host — orchestrates all tool servers",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "mcp-hub": "./dist/cli.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/cli.js"
+  },
+  "dependencies": {
+    "@mcp-tool-hub/core": "*",
+    "@mcp-tool-hub/server-filesystem": "*",
+    "@mcp-tool-hub/server-git": "*",
+    "@mcp-tool-hub/server-fetch": "*",
+    "@mcp-tool-hub/server-memory": "*"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "@types/node": "^20.12.7"
+  }
+}
