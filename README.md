@@ -201,3 +201,4 @@ Ideas: `server-slack`, `server-postgres`, `server-docker`, `server-ansible`, `se
 - Node.js ≥ 18 (for native `fetch` API)
 - Git (for `server-git`)
 - Linux with systemd (for Ansible deployment)
+# SSH Server added and tested Sat May  2 14:23:33 -03 2026
