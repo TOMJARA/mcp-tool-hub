@@ -13,6 +13,7 @@ import { FilesystemServer } from "@mcp-tool-hub/server-filesystem";
 import { GitServer }        from "@mcp-tool-hub/server-git";
 import { FetchServer }      from "@mcp-tool-hub/server-fetch";
 import { MemoryServer }     from "@mcp-tool-hub/server-memory";
+import { SSHServer } from "@mcp-tool-hub/server-ssh";
 
 // ---- Configuration from environment / defaults ----------------
 
@@ -42,8 +43,8 @@ async function main(): Promise<void> {
     .use(new FilesystemServer({ allowedRoot: FS_ROOT }))
     .use(new GitServer({ workspacePath: GIT_WORKSPACE }))
     .use(new FetchServer({ allowedDomains: ALLOWED_DOMAINS }))
-    .use(new MemoryServer({ storePath: MEMORY_PATH }));
-
+        .use(new MemoryServer({ storePath: MEMORY_PATH }))
+    .use(new SSHServer({ hostsConfigPath: path.join(DATA_DIR, "ssh-hosts.json"), localFilesRoot: FS_ROOT }));
   await hub.start();
 
   // Print tool manifest
