@@ -19,6 +19,7 @@ import { NetworkServer } from "@mcp-tool-hub/server-network";
 import { NotificationServer } from "@mcp-tool-hub/server-notification";
 import { EmailServer } from "@mcp-tool-hub/server-email";
 import { DatabaseServer } from "@mcp-tool-hub/server-database";
+import { WorkflowServer } from "@mcp-tool-hub/server-workflow";
 
 // ---- Configuration from environment / defaults ----------------
 
@@ -58,8 +59,13 @@ async function main(): Promise<void> {
         .use(new NetworkServer({}))
         .use(new NotificationServer({ botToken: TELEGRAM_TOKEN, chatId: TELEGRAM_CHAT_ID }))
         .use(new EmailServer({ smtpHost: "smtp.gmail.com", smtpPort: 465, smtpUser: GMAIL_USER, smtpPass: GMAIL_PASS, fromName: "MCP Tool Hub" }))
-    .use(new DatabaseServer({ connectionsConfigPath: path.join(DATA_DIR, "db-connections.json") }));
+        .use(new DatabaseServer({ connectionsConfigPath: path.join(DATA_DIR, "db-connections.json") }))
+    .use(new WorkflowServer({ workflowsPath: path.join(DATA_DIR, "workflows.json") }));
   await hub.start();
+
+  // Wire workflow engine to all servers
+  const workflowSrv = hub.getServers().find(s => s.info.id === "workflow") as WorkflowServer;
+  if (workflowSrv) workflowSrv.registerHub(hub.getServers());
 
   // Print tool manifest
   console.log("\n" + hub.generateToolManifest());

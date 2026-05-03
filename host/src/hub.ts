@@ -137,6 +137,10 @@ export class MCPHub {
   /**
    * Return the full tool definitions array (for OpenAI/Anthropic function-calling APIs)
    */
+  getServers(): IMCPServer[] {
+    return [...(this as any).registry.servers.values()];
+  }
+
   getToolDefinitions(): ToolDefinition[] {
     const { servers } = this.registry.snapshot();
     return servers.flatMap((s) => s.tools);
