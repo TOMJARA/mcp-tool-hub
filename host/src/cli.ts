@@ -15,6 +15,7 @@ import { FetchServer }      from "@mcp-tool-hub/server-fetch";
 import { MemoryServer }     from "@mcp-tool-hub/server-memory";
 import { SSHServer } from "@mcp-tool-hub/server-ssh";
 import { DockerServer } from "@mcp-tool-hub/server-docker";
+import { NetworkServer } from "@mcp-tool-hub/server-network";
 
 // ---- Configuration from environment / defaults ----------------
 
@@ -46,7 +47,8 @@ async function main(): Promise<void> {
     .use(new FetchServer({ allowedDomains: ALLOWED_DOMAINS }))
         .use(new MemoryServer({ storePath: MEMORY_PATH }))
         .use(new SSHServer({ hostsConfigPath: path.join(DATA_DIR, "ssh-hosts.json"), localFilesRoot: FS_ROOT }))
-    .use(new DockerServer({}));
+        .use(new DockerServer({}))
+    .use(new NetworkServer({}));
   await hub.start();
 
   // Print tool manifest
