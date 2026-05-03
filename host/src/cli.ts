@@ -17,6 +17,7 @@ import { SSHServer } from "@mcp-tool-hub/server-ssh";
 import { DockerServer } from "@mcp-tool-hub/server-docker";
 import { NetworkServer } from "@mcp-tool-hub/server-network";
 import { NotificationServer } from "@mcp-tool-hub/server-notification";
+import { EmailServer } from "@mcp-tool-hub/server-email";
 
 // ---- Configuration from environment / defaults ----------------
 
@@ -26,6 +27,8 @@ const GIT_WORKSPACE  = process.env.MCP_GIT_WORKSPACE  ?? path.join(DATA_DIR, "re
 const MEMORY_PATH    = process.env.MCP_MEMORY_PATH    ?? path.join(DATA_DIR, "memory.json");
 const LOG_LEVEL      = (process.env.MCP_LOG_LEVEL     ?? "info") as "debug" | "info" | "warn" | "error";
 const ALLOWED_DOMAINS_RAW = process.env.MCP_FETCH_ALLOWED_DOMAINS ?? "";
+const GMAIL_USER = process.env.MCP_GMAIL_USER ?? "";
+const GMAIL_PASS = process.env.MCP_GMAIL_PASS ?? "";
 const TELEGRAM_TOKEN = process.env.MCP_TELEGRAM_TOKEN ?? "";
 const TELEGRAM_CHAT_ID = process.env.MCP_TELEGRAM_CHAT_ID ?? "";
 const ALLOWED_DOMAINS = ALLOWED_DOMAINS_RAW
@@ -52,7 +55,8 @@ async function main(): Promise<void> {
         .use(new SSHServer({ hostsConfigPath: path.join(DATA_DIR, "ssh-hosts.json"), localFilesRoot: FS_ROOT }))
         .use(new DockerServer({}))
         .use(new NetworkServer({}))
-    .use(new NotificationServer({ botToken: TELEGRAM_TOKEN, chatId: TELEGRAM_CHAT_ID }));
+        .use(new NotificationServer({ botToken: TELEGRAM_TOKEN, chatId: TELEGRAM_CHAT_ID }))
+    .use(new EmailServer({ smtpHost: "smtp.gmail.com", smtpPort: 465, smtpUser: GMAIL_USER, smtpPass: GMAIL_PASS, fromName: "MCP Tool Hub" }));
   await hub.start();
 
   // Print tool manifest
