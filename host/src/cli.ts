@@ -18,6 +18,7 @@ import { DockerServer } from "@mcp-tool-hub/server-docker";
 import { NetworkServer } from "@mcp-tool-hub/server-network";
 import { NotificationServer } from "@mcp-tool-hub/server-notification";
 import { EmailServer } from "@mcp-tool-hub/server-email";
+import { DatabaseServer } from "@mcp-tool-hub/server-database";
 
 // ---- Configuration from environment / defaults ----------------
 
@@ -56,7 +57,8 @@ async function main(): Promise<void> {
         .use(new DockerServer({}))
         .use(new NetworkServer({}))
         .use(new NotificationServer({ botToken: TELEGRAM_TOKEN, chatId: TELEGRAM_CHAT_ID }))
-    .use(new EmailServer({ smtpHost: "smtp.gmail.com", smtpPort: 465, smtpUser: GMAIL_USER, smtpPass: GMAIL_PASS, fromName: "MCP Tool Hub" }));
+        .use(new EmailServer({ smtpHost: "smtp.gmail.com", smtpPort: 465, smtpUser: GMAIL_USER, smtpPass: GMAIL_PASS, fromName: "MCP Tool Hub" }))
+    .use(new DatabaseServer({ connectionsConfigPath: path.join(DATA_DIR, "db-connections.json") }));
   await hub.start();
 
   // Print tool manifest
